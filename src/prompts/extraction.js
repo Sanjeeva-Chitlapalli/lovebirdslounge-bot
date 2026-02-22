@@ -35,6 +35,7 @@ function buildExtractionPrompt(
 }
 
 function buildReflectionPrompt(
+  senderName, senderRole, currentMessageText,
   extractedDataRaw,
   datetime, timezone,
   partnerAName, partnerBName,
@@ -56,6 +57,7 @@ function buildReflectionPrompt(
     `Known Likes/Dislikes for ${partnerAName}: ${likesA}\n` +
     `Known Likes/Dislikes for ${partnerBName}: ${likesB}\n` +
     `Recent Conversation Context (Last 24hrs):\n${recentHistory}\n\n` +
+    `New message from ${senderName} (Partner ${senderRole}): "${currentMessageText}"\n\n` +
     `Newly Extracted Facts from the latest message:\n${extractedDataRaw}\n\n` +
     `Return JSON:\n` +
     `{\n` +
@@ -71,8 +73,9 @@ function buildReflectionPrompt(
     `- ALWAYS look for opportunities to be thoughtful. If someone is stressed, sad, or has an upcoming event, create a reminder for their partner to check in.\n` +
     `- Use the known likes to personalize the reminder (e.g., if A likes pizza, suggest B gets pizza for A).\n` +
     `- Reminder message must be a gentle suggestion, NOT forceful.\n` +
-    `- scheduledAt must be logically determined (immediate if comfort needed today, or morning of an event) and must be strictly AFTER ${datetime}.\n` +
-    `- Be highly perceptive to subtle cues. If the text says "wish me luck", create a reminder to check in how it went.` +
+    `- scheduledAt must be logically determined (immediate if comfort needed today, or morning of an event) and must be strictly AFTER ${datetime}. MUST BE BARE ISO8601 WITH NO TIMEZONE APPENDED.\n` +
+    `- Make absolutely sure you associate preferences correctly! The sender of the current message is ${senderName} (Partner ${senderRole}). If THEY state they like something, put it in newPreferences${senderRole}.\n` +
+    `- Be highly perceptive to subtle cues. If the text says "wish me luck", create a reminder to check in how it went.\n` +
     `- Return empty arrays if absolutely nothing of value is found.\n` +
     `- Return ONLY the JSON object.`;
 

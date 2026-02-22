@@ -20,3 +20,6 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+ssh-key-2026-02-22.key
+ssh-key-2026-02-22.key.pub

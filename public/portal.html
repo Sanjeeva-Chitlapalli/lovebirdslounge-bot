@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoveBirds Lounge — Your Nest</title>
+    <meta name="description" content="Check the status of your LoveBirds Lounge nest and see what Lumi is up to." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --cream: #fdf6ee;
+            --blush: #f9e8e8;
+            --rose: #e8748a;
+            --rose-dk: #c95470;
+            --rose-lt: #fde8ed;
+            --warm: #f7c59f;
+            --text: #2d1b1e;
+            --muted: #8a5b64;
+            --border: #f0d0d8;
+            --white: #ffffff;
+            --green: #4caf86;
+            --green-lt: #e8f6f0;
+            --radius: 14px;
+            --shadow: 0 8px 36px rgba(201, 84, 112, .13);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(150deg, var(--cream) 0%, var(--blush) 55%, #fce8d5 100%);
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px 48px;
+            color: var(--text);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, .88);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 460px;
+            padding: 44px 38px 48px;
+            animation: fadeUp .45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 22px 36px;
+            }
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .big-icon {
+            font-size: 2.8rem;
+            display: block;
+            margin-bottom: 10px;
+            animation: float 3.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-7px);
+            }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--rose-dk);
+            letter-spacing: -.025em;
+            margin-bottom: 6px;
+        }
+
+        .hero p {
+            font-size: .88rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 99px;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .status-pill.pending {
+            background: #fff8e8;
+            color: #b07a10;
+            border: 1px solid #f5d87a;
+        }
+
+        .status-pill.active {
+            background: var(--green-lt);
+            color: #2e8a5e;
+            border: 1px solid #a8dfc7;
+        }
+
+        .status-pill.waiting {
+            background: var(--rose-lt);
+            color: var(--rose-dk);
+            border: 1px solid var(--border);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Nest info grid */
+        .nest-grid {
+            background: var(--rose-lt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nest-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nest-key {
+            font-size: .75rem;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .nest-val {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Partners row */
+        .partners {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .partner-card {
+            flex: 1;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .partner-card .avatar {
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        .partner-card .pname {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .partner-card .ptag {
+            font-size: .72rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .partner-card .pkick {
+            font-size: .7rem;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .active-tag {
+            color: var(--green);
+        }
+
+        .pending-tag {
+            color: var(--muted);
+        }
+
+        /* Info box */
+        .info-box {
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-box.orange {
+            background: #fdf2e9;
+            border: 1px solid #f5d5b0;
+        }
+
+        .info-box.green {
+            background: var(--green-lt);
+            border: 1px solid #a8dfc7;
+        }
+
+        .info-box h3 {
+            font-size: .86rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .info-box ol {
+            padding-left: 18px;
+            font-size: .83rem;
+            color: var(--muted);
+            line-height: 1.75;
+        }
+
+        .info-box p {
+            font-size: .85rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .code-chip {
+            display: inline-block;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-family: monospace;
+            font-size: .95rem;
+            color: var(--rose-dk);
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+
+        /* Refresh */
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--blush);
+            color: var(--rose-dk);
+        }
+
+        /* No-session state */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: .98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity .17s, transform .13s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rose) 0%, var(--warm) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 18px rgba(232, 116, 138, .35);
+        }
+
+        .btn-primary:hover {
+            opacity: .92;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card" id="main-card">
+        <div style="text-align:center;padding:40px 0">
+            <span style="font-size:2.5rem">🌙</span>
+            <p style="color:#8a5b64;margin-top:12px;font-size:.9rem">Loading your nest…</p>
+        </div>
+    </div>
+
+    <script>
+        const card = document.getElementById('main-card');
+
+        async function loadPortal() {
+            // Get session
+            let session = null;
+            try {
+                const sr = await fetch('/auth/session');
+                if (sr.ok) session = await sr.json();
+            } catch { /* ignore */ }
+
+            if (!session?.lineUserId || !session?.nestCode) {
+                renderNoSession();
+                return;
+            }
+
+            // Get nest
+            let nest = null;
+            try {
+                const nr = await fetch(`/api/nest/${session.nestCode}`);
+                const nd = await nr.json();
+                if (nr.ok) nest = nd.nest;
+            } catch { /* ignore */ }
+
+            if (!nest) {
+                renderError('Could not load your nest. Please try again later.');
+                return;
+            }
+
+            renderPortal(session, nest);
+        }
+
+        function renderNoSession() {
+            card.innerHTML = `
+        <div class="hero">
+          <span class="big-icon">🔒</span>
+          <h1>Sign In Required</h1>
+          <p>Please log in with LINE to view your nest status.</p>
+        </div>
+        <a href="/" class="btn btn-primary">Go to Home</a>
+      `;
+        }
+
+        function renderError(msg) {
+            card.innerHTML = `
+        <div class="hero">
+          <span class="big-icon">😕</span>
+          <h1>Oops</h1>
+          <p>${msg}</p>
+        </div>
+      `;
+        }
+
+        function renderPortal(session, nest) {
+            const statusLabel = {
+                pending_partner: 'Waiting for partner',
+                pending_line: 'Pending LINE link',
+                active: 'Active',
+            }[nest.status] ?? nest.status;
+
+            const statusClass = nest.status === 'active' ? 'active'
+                : nest.status === 'pending_line' ? 'pending'
+                    : 'waiting';
+            const statusIcon = nest.status === 'active' ? '✦' : '◐';
+
+            const aActive = nest.partnerA?.dmActive;
+            const bActive = nest.partnerB?.dmActive;
+
+            card.innerHTML = `
+        <div class="hero">
+          <span class="big-icon">${nest.status === 'active' ? '🌙' : '🪺'}</span>
+          <h1>${escHtml(nest.nestName ?? 'Your Nest')}</h1>
+          <p>Hey ${escHtml(session.name ?? 'there')} 👋 Here's how things look right now.</p>
+        </div>
+
+        <div class="nest-grid">
+          <div class="nest-row">
+            <span class="nest-key">Nest Code</span>
+            <span class="code-chip">${escHtml(nest.nestCode)}</span>
+          </div>
+          <div class="nest-row">
+            <span class="nest-key">Status</span>
+            <span class="status-pill ${statusClass}"><span class="dot"></span>${statusLabel}</span>
+          </div>
+          <div class="nest-row">
+            <span class="nest-key">Timezone</span>
+            <span class="nest-val">${escHtml(nest.timezone ?? '—')}</span>
+          </div>
+        </div>
+
+        <div class="partners">
+          <div class="partner-card">
+            <div class="avatar">🐦</div>
+            <div class="pname">${escHtml(nest.partnerA?.name ?? 'Partner A')}</div>
+            <div class="ptag">Partner A</div>
+            <div class="pkick ${aActive ? 'active-tag' : 'pending-tag'}">${aActive ? '✓ DM active' : '⏳ Not yet'}</div>
+          </div>
+          <div class="partner-card">
+            <div class="avatar">🐦</div>
+            <div class="pname">${escHtml(nest.partnerB?.name ?? 'Partner B')}</div>
+            <div class="ptag">Partner B</div>
+            <div class="pkick ${bActive ? 'active-tag' : 'pending-tag'}">${bActive ? '✓ DM active' : '⏳ Not yet'}</div>
+          </div>
+        </div>
+
+        ${nest.status === 'active' ? `
+          <div class="info-box green">
+            <h3>🌙 Your nest is active!</h3>
+            <p>Lumi is watching over your conversations and will send gentle reminders when needed. You can @Lumi in your LINE group anytime to ask questions 💛</p>
+          </div>
+        ` : nest.status === 'pending_line' ? `
+          <div class="info-box orange">
+            <h3>🔗 One more step!</h3>
+            <ol>
+              <li>Create a LINE group with both partners</li>
+              <li>Add <strong>Lumi</strong> to the group</li>
+              <li>Type <strong>/link ${escHtml(nest.nestCode)}</strong> in the group</li>
+            </ol>
+          </div>
+        ` : `
+          <div class="info-box orange">
+            <h3>💌 Waiting for your partner</h3>
+            <p>Share the invite link so your partner can join. Once they're in, you'll link Lumi to your LINE group.</p>
+          </div>
+        `}
+
+        <button class="refresh-btn" onclick="loadPortal()">↻ Refresh Status</button>
+      `;
+        }
+
+        function escHtml(s) {
+            return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        loadPortal();
+    </script>
+</body>
+
+</html>

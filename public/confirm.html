@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="LoveBirds Lounge – ยืนยันการแจ้งเตือน" />
+    <title>ยืนยันการแจ้งเตือน 🐦 LoveBirds Lounge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --pink: #ff6b9d;
+            --teal: #43e6c5;
+            --bg: #0f0a1a;
+            --text: #f5eeff;
+            --muted: #a08cc0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 30%, rgba(255, 107, 157, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .icon {
+            font-size: 4rem;
+            animation: bounce .6s ease-in-out infinite alternate;
+        }
+
+        @keyframes bounce {
+            from {
+                transform: scale(1)
+            }
+
+            to {
+                transform: scale(1.08)
+            }
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--pink), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 1rem 0 .5rem;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .status-ok .icon-text {
+            content: '✅';
+        }
+
+        .status-fail .icon-text {
+            content: '❌';
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: .75rem 2rem;
+            background: linear-gradient(135deg, var(--pink), #ff3d7f);
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity .2s, transform .15s;
+        }
+
+        .btn:hover {
+            opacity: .88;
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card" id="card">
+        <div class="icon" id="icon">🐦</div>
+        <h1 id="title">กำลังตรวจสอบ…</h1>
+        <p id="desc">โปรดรอสักครู่</p>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(location.search);
+        const status = params.get('status');
+        const icon = document.getElementById('icon');
+        const title = document.getElementById('title');
+        const desc = document.getElementById('desc');
+        const card = document.getElementById('card');
+
+        if (status === 'ok') {
+            icon.textContent = '✅';
+            title.textContent = 'ยืนยันสำเร็จ!';
+            desc.innerHTML = 'การแจ้งเตือนของคุณได้รับการยืนยันแล้ว<br>น้องนกจะไม่ลืมแน่นอน 🐦💛';
+        } else if (status === 'not_found') {
+            icon.textContent = '🔍';
+            title.textContent = 'ไม่พบรายการ';
+            desc.textContent = 'ลิงก์นี้อาจหมดอายุหรือถูกใช้ไปแล้ว';
+        } else {
+            icon.textContent = '❌';
+            title.textContent = 'เกิดข้อผิดพลาด';
+            desc.textContent = 'ไม่สามารถยืนยันได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง';
+        }
+
+        // Add a back link if came from LINE
+        const backBtn = document.createElement('a');
+        backBtn.href = '/';
+        backBtn.className = 'btn';
+        backBtn.textContent = '← กลับหน้าหลัก';
+        document.getElementById('card').appendChild(backBtn);
+    </script>
+</body>
+
+</html>

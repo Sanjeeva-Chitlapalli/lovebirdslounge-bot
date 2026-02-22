@@ -1,0 +1,212 @@
+'use strict';
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const Reminder = require('../models/Reminder');
+const Memory   = require('../models/Memory');
+const { buildExtractionPrompt } = require('../prompts/extraction');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ── Gemini helper with exponential-backoff retry ──────────────────────────────
+const RETRY_DELAYS_MS = [2_000, 4_000, 8_000];
+
+async function callGeminiWithRetry(prompt) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  let lastErr;
+
+  for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < RETRY_DELAYS_MS.length) {
+        console.warn(
+          `[Extraction] Gemini attempt ${attempt + 1} failed (${err.message}), ` +
+          `retrying in ${RETRY_DELAYS_MS[attempt] / 1000}s…`
+        );
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+// ── JSON fence stripper ───────────────────────────────────────────────────────
+function parseJsonSafe(raw) {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/m, '')
+    .replace(/\s*```$/m, '')
+    .trim();
+  return JSON.parse(cleaned);
+}
+
+// ── extract() ─────────────────────────────────────────────────────────────────
+/**
+ * Run AI extraction on a saved Message document.
+ *
+ * NEVER throws — called fire-and-forget from webhook.js.
+ *
+ * @param {import('../models/Message')} messageDoc  – saved Mongoose doc
+ * @param {import('../models/Nest')}    nest         – full Mongoose Nest doc
+ */
+async function extract(messageDoc, nest) {
+  try {
+    // ── Determine sender role ─────────────────────────────────────────────────
+    const senderRole =
+      messageDoc.senderId === nest.partnerA?.lineUserId ? 'A' : 'B';
+
+    const senderName =
+      senderRole === 'A'
+        ? (nest.partnerA?.name ?? messageDoc.senderId)
+        : (nest.partnerB?.name ?? messageDoc.senderId);
+
+    // ── Build prompt ──────────────────────────────────────────────────────────
+    const tz       = nest.timezone ?? 'Asia/Bangkok';
+    const datetime = new Date().toLocaleString('sv-SE', { timeZone: tz, hour12: false })
+                               .replace(' ', 'T');
+
+    const prompt = buildExtractionPrompt(
+      senderName,
+      senderRole,
+      messageDoc.text,
+      datetime,
+      tz,
+      nest.partnerA?.name ?? 'Partner A',
+      nest.partnerB?.name ?? 'Partner B',
+    );
+
+    // ── Call Gemini (with retry) ───────────────────────────────────────────────
+    let raw;
+    try {
+      raw = await callGeminiWithRetry(prompt);
+    } catch (err) {
+      console.error(`[Extraction] Gemini permanently failed for nest=${nest.nestCode}: ${err.message}`);
+      return;
+    }
+
+    // ── Parse JSON ────────────────────────────────────────────────────────────
+    let parsed;
+    try {
+      parsed = parseJsonSafe(raw);
+    } catch (parseErr) {
+      console.warn(
+        `[Extraction] JSON parse failed for nest=${nest.nestCode}\n` +
+        `  Raw (300 chars): ${raw.slice(0, 300)}\n  Error: ${parseErr.message}`
+      );
+      return;
+    }
+
+    // ── Update messageDoc.extracted ───────────────────────────────────────────
+    messageDoc.extracted = {
+      events:       Array.isArray(parsed.events)   ? parsed.events   : [],
+      emotion:      typeof parsed.emotion === 'string' ? parsed.emotion : null,
+      keyFacts:     Array.isArray(parsed.keyFacts) ? parsed.keyFacts : [],
+      hasReminders: Array.isArray(parsed.reminders) && parsed.reminders.length > 0,
+    };
+    await messageDoc.save();
+
+    // ── Schedule reminders ────────────────────────────────────────────────────
+    const rawReminders = Array.isArray(parsed.reminders) ? parsed.reminders : [];
+    let scheduledCount = 0;
+
+    for (const r of rawReminders) {
+      if (!r.message || !r.scheduledAt || !r.recipientRole) continue;
+
+      // Resolve 'A', 'B', 'both' → actual lineUserId(s)
+      const targets = resolveRecipients(r.recipientRole, nest);
+
+      for (const { lineUserId, name, partnerName } of targets) {
+        // Only schedule if recipient has followed the bot (dmActive)
+        const isA   = lineUserId === nest.partnerA?.lineUserId;
+        const dmOk  = isA ? nest.partnerA?.dmActive : nest.partnerB?.dmActive;
+        if (!dmOk) {
+          console.info(`[Extraction] Skipping reminder — ${name} hasn't followed the bot yet`);
+          continue;
+        }
+
+        const scheduledAt = new Date(r.scheduledAt);
+        if (isNaN(scheduledAt.getTime())) {
+          console.warn(`[Extraction] Invalid scheduledAt "${r.scheduledAt}" — skipped`);
+          continue;
+        }
+
+        // Deduplication: skip if an identical reminder already exists
+        const duplicate = await Reminder.findOne({
+          nestId:              nest._id,
+          scheduledAt,
+          recipientLineUserId: lineUserId,
+        });
+        if (duplicate) continue;
+
+        await Reminder.create({
+          nestId:              nest._id,
+          recipientLineUserId: lineUserId,
+          recipientName:       name,
+          partnerName,
+          message:             r.message,
+          scheduledAt,
+          sourceMessageId:     messageDoc._id,
+        });
+
+        scheduledCount++;
+      }
+    }
+
+    // ── Accumulate keyFacts into Memory ───────────────────────────────────────
+    const newFacts = parsed.keyFacts ?? [];
+    if (newFacts.length) {
+      const current  = await Memory.findOne({ nestId: nest._id }).lean();
+      const existing = current?.summary
+        ? current.summary.split('\n').filter(Boolean)
+        : [];
+      const merged   = [...new Set([...existing, ...newFacts])].slice(-50);
+
+      await Memory.upsertForNest(nest._id, {
+        summary:      merged.join('\n'),
+        messageCount: (current?.messageCount ?? 0) + 1,
+      });
+    }
+
+    console.log(
+      `[Extraction] nest=${nest.nestCode} | senderRole=${senderRole} | ` +
+      `events=${(parsed.events ?? []).length} | emotion=${parsed.emotion ?? 'n/a'} | ` +
+      `keyFacts=${newFacts.length} | reminders=${scheduledCount}`
+    );
+
+  } catch (err) {
+    console.error(
+      `[Extraction] Unexpected error for nest=${nest?.nestCode}: ${err.message}`,
+      err.stack
+    );
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+/**
+ * Resolve recipientRole ('A' | 'B' | 'both') to an array of
+ * { lineUserId, name, partnerName } objects.
+ *
+ * @param {string} role
+ * @param {object} nest – Mongoose Nest document
+ * @returns {{ lineUserId: string, name: string, partnerName: string }[]}
+ */
+function resolveRecipients(role, nest) {
+  const aId = nest.partnerA?.lineUserId;
+  const bId = nest.partnerB?.lineUserId;
+  const aName = nest.partnerA?.name ?? 'Partner A';
+  const bName = nest.partnerB?.name ?? 'Partner B';
+
+  if (role === 'A' && aId) return [{ lineUserId: aId, name: aName, partnerName: bName }];
+  if (role === 'B' && bId) return [{ lineUserId: bId, name: bName, partnerName: aName }];
+  if (role === 'both') {
+    const targets = [];
+    if (aId) targets.push({ lineUserId: aId, name: aName, partnerName: bName });
+    if (bId) targets.push({ lineUserId: bId, name: bName, partnerName: aName });
+    return targets;
+  }
+  return [];
+}
+
+module.exports = { extract };

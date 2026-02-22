@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoveBirds Lounge — Join Your Nest</title>
+    <meta name="description"
+        content="Your partner has invited you to join LoveBirds Lounge — connect with Lumi, your AI couple companion." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --cream: #fdf6ee;
+            --blush: #f9e8e8;
+            --rose: #e8748a;
+            --rose-dk: #c95470;
+            --rose-lt: #fde8ed;
+            --warm: #f7c59f;
+            --text: #2d1b1e;
+            --muted: #8a5b64;
+            --border: #f0d0d8;
+            --white: #ffffff;
+            --radius: 14px;
+            --shadow: 0 8px 36px rgba(201, 84, 112, .13);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(150deg, var(--cream) 0%, var(--blush) 55%, #fce8d5 100%);
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px 48px;
+            color: var(--text);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, .88);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 460px;
+            padding: 44px 38px 48px;
+            animation: fadeUp .45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 22px 36px;
+            }
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .moon {
+            font-size: 2.8rem;
+            display: block;
+            margin-bottom: 10px;
+            animation: float 3.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-7px);
+            }
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--rose-dk);
+            letter-spacing: -.025em;
+            margin-bottom: 6px;
+        }
+
+        .hero p {
+            font-size: .88rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .nest-info {
+            background: var(--rose-lt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .nest-info .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .nest-info .row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nest-info .key {
+            font-size: .75rem;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .nest-info .val {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--rose-dk);
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: var(--white);
+            font-family: inherit;
+            font-size: .92rem;
+            color: var(--text);
+            outline: none;
+            transition: border-color .17s, box-shadow .17s;
+        }
+
+        input:focus {
+            border-color: var(--rose);
+            box-shadow: 0 0 0 3px rgba(232, 116, 138, .18);
+        }
+
+        input::placeholder {
+            color: #cba9b0;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: .98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity .17s, transform .13s, box-shadow .17s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rose) 0%, var(--warm) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 18px rgba(232, 116, 138, .35);
+        }
+
+        .btn-primary:hover {
+            opacity: .92;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: none;
+        }
+
+        .btn-primary:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-msg {
+            display: none;
+            margin-top: 14px;
+            padding: 11px 14px;
+            background: var(--rose-lt);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: .83rem;
+            color: var(--rose-dk);
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            animation: shimmer 1.4s ease-in-out infinite;
+            background: linear-gradient(90deg, #f0d0d8 25%, #fde8ed 50%, #f0d0d8 75%);
+            background-size: 200% 100%;
+            border-radius: 6px;
+            height: 1em;
+            width: 60%;
+            display: inline-block;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Success */
+        #success-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 3.2rem;
+            display: block;
+            margin-bottom: 12px;
+            animation: pop .4s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--rose-dk);
+            margin-bottom: 6px;
+        }
+
+        .success-sub {
+            font-size: .87rem;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .instructions-box {
+            background: #fdf2e9;
+            border: 1px solid #f5d5b0;
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            text-align: left;
+        }
+
+        .instructions-box h3 {
+            font-size: .86rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .instructions-box ol {
+            padding-left: 18px;
+            font-size: .83rem;
+            color: var(--muted);
+            line-height: 1.75;
+        }
+
+        /* Auth step */
+        #auth-screen {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+
+        <!-- Loading state (default) -->
+        <div id="loading-screen">
+            <div class="hero">
+                <span class="moon">🌙</span>
+                <h1>LoveBirds Lounge</h1>
+                <p>Loading your nest…</p>
+            </div>
+            <div class="nest-info">
+                <div class="row"><span class="key">Nest</span><span class="val"><span class="skeleton"></span></span>
+                </div>
+                <div class="row"><span class="key">Partner A</span><span class="val"><span class="skeleton"
+                            style="width:40%"></span></span></div>
+            </div>
+        </div>
+
+        <!-- Auth screen — prompt Partner B to sign in with LINE -->
+        <div id="auth-screen">
+            <div class="hero">
+                <span class="moon">💌</span>
+                <h1>You've Been Invited!</h1>
+                <p id="invite-msg">Your partner has set up a nest. Sign in with LINE to join them.</p>
+            </div>
+            <div class="nest-info" id="nest-info-box">
+                <div class="row"><span class="key">Nest</span><span class="val" id="info-nestName">—</span></div>
+                <div class="row"><span class="key">Partner A</span><span class="val" id="info-partnerA">—</span></div>
+                <div class="row"><span class="key">Status</span><span class="badge">Waiting for you 💛</span></div>
+            </div>
+            <button id="line-login-btn" class="btn btn-primary">Sign in with LINE 💚</button>
+        </div>
+
+        <!-- Name input screen (after OAuth) -->
+        <div id="form-screen" style="display:none">
+            <div class="hero">
+                <span class="moon">🪺</span>
+                <h1>Almost There!</h1>
+                <p>Signed in as <strong id="session-name">you</strong>. Just tell Lumi your name.</p>
+            </div>
+            <form id="join-form" novalidate>
+                <div class="field">
+                    <label for="partnerBName">Your Name</label>
+                    <input id="partnerBName" name="partnerBName" type="text" placeholder="e.g. Leo" required />
+                </div>
+                <div id="error-msg" class="error-msg" role="alert"></div>
+                <button id="submit-btn" class="btn btn-primary" type="submit" style="margin-top:8px">Join the Nest
+                    💛</button>
+            </form>
+        </div>
+
+        <!-- Success -->
+        <div id="success-screen">
+            <span class="success-icon">🎉</span>
+            <p class="success-title">You're In!</p>
+            <p class="success-sub" id="success-sub">Welcome to your nest 🌙</p>
+            <div class="instructions-box">
+                <h3>🔗 Connect Lumi to your group</h3>
+                <ol id="instructions-list">
+                    <li>Create a LINE group with both of you</li>
+                    <li>Add <strong>@LumiBot</strong> to the group</li>
+                    <li>Type <strong>/link [nestCode]</strong> in the group chat</li>
+                    <li>Lumi will confirm — your nest goes live 🌙</li>
+                </ol>
+            </div>
+        </div>
+
+    </div><!-- /card -->
+
+    <script>
+        // Parse nestCode from path: /join/:nestCode
+        const nestCode = location.pathname.split('/').filter(Boolean).pop() || '';
+
+        // ── 1. Load nest info ─────────────────────────────────────────────────────
+        (async () => {
+            try {
+                const res = await fetch(`/api/nest/${nestCode}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.nest) {
+                    document.getElementById('loading-screen').innerHTML =
+                        '<p style="text-align:center;color:#c95470">Nest not found. Check your invite link.</p>';
+                    return;
+                }
+
+                const nest = data.nest;
+                document.getElementById('info-nestName').textContent = nest.nestName || '—';
+                document.getElementById('info-partnerA').textContent = nest.partnerA?.name || '—';
+
+                // Check session
+                let session = null;
+                try {
+                    const sr = await fetch('/auth/session');
+                    session = await sr.json();
+                } catch { /* no session route yet */ }
+
+                document.getElementById('loading-screen').style.display = 'none';
+
+                if (session?.lineUserId) {
+                    // Already signed in → show name form
+                    document.getElementById('session-name').textContent = session.name ?? 'you';
+                    document.getElementById('form-screen').style.display = '';
+                } else {
+                    // Not signed in → show auth prompt
+                    document.getElementById('invite-msg').textContent =
+                        `${nest.partnerA?.name ?? 'Your partner'} has set up a nest called "${nest.nestName}". Sign in with LINE to join!`;
+                    document.getElementById('auth-screen').style.display = '';
+                }
+            } catch (err) {
+                document.getElementById('loading-screen').innerHTML =
+                    `<p style="text-align:center;color:#c95470">Error loading nest: ${err.message}</p>`;
+            }
+        })();
+
+        // ── 2. LINE OAuth redirect ────────────────────────────────────────────────
+        document.getElementById('line-login-btn').addEventListener('click', () => {
+            location.href = `/auth/line?nestCode=${encodeURIComponent(nestCode)}`;
+        });
+
+        // ── 3. Join form submit ───────────────────────────────────────────────────
+        const form = document.getElementById('join-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMsg = document.getElementById('error-msg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+
+            const partnerBName = form.partnerBName.value.trim();
+            if (!partnerBName) {
+                errorMsg.textContent = 'Please enter your name.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Joining…';
+
+            try {
+                const res = await fetch('/api/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nestCode, partnerBName }),
+                });
+                const json = await res.json();
+
+                if (!res.ok) throw new Error(json.error || 'Something went wrong.');
+
+                document.getElementById('success-sub').textContent =
+                    `Welcome, ${partnerBName}! ${json.nestName ? `Your nest "${json.nestName}" is almost ready.` : ''}`;
+
+                if (json.instructions) {
+                    // Replace instruction list with server message
+                    const ol = document.getElementById('instructions-list');
+                    ol.innerHTML = '';
+                    json.instructions.split('\n').filter(l => l.trim()).forEach(line => {
+                        const li = document.createElement('li');
+                        li.textContent = line.replace(/^\d+\.\s*/, '');
+                        ol.appendChild(li);
+                    });
+                }
+
+                document.getElementById('form-screen').style.display = 'none';
+                document.getElementById('success-screen').style.display = '';
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Join the Nest 💛';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -66,6 +66,9 @@ router.post('/register', requireSession, async (req, res) => {
 
     const inviteUrl = `${process.env.BASE_URL}/join/${nest.nestCode}`;
 
+    // Update session so Partner A can visit /portal.html immediately after
+    req.session.nestCode = nest.nestCode;
+
     console.log(`[Portal] Nest created — ${nest.nestCode} by ${nest.partnerA.name ?? req.session.lineUserId}`);
 
     return res.status(201).json({

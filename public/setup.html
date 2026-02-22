@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoveBirds Lounge — Set Up Your Nest</title>
+    <meta name="description" content="Create your couple nest and invite your partner to join Lumi." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --cream: #fdf6ee;
+            --blush: #f9e8e8;
+            --rose: #e8748a;
+            --rose-dk: #c95470;
+            --rose-lt: #fde8ed;
+            --warm: #f7c59f;
+            --text: #2d1b1e;
+            --muted: #8a5b64;
+            --border: #f0d0d8;
+            --white: #ffffff;
+            --radius: 14px;
+            --shadow: 0 8px 36px rgba(201, 84, 112, .13);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(150deg, var(--cream) 0%, var(--blush) 55%, #fce8d5 100%);
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px 48px;
+            color: var(--text);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, .88);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 460px;
+            padding: 44px 38px 48px;
+            animation: fadeUp .45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 22px 36px;
+            }
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .moon {
+            font-size: 2.4rem;
+            display: block;
+            margin-bottom: 8px;
+            animation: float 3.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-7px);
+            }
+        }
+
+        .form-header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--rose-dk);
+            letter-spacing: -.02em;
+            margin-bottom: 4px;
+        }
+
+        .form-header p {
+            font-size: .85rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 5px;
+            letter-spacing: .01em;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: var(--white);
+            font-family: inherit;
+            font-size: .92rem;
+            color: var(--text);
+            outline: none;
+            transition: border-color .17s, box-shadow .17s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--rose);
+            box-shadow: 0 0 0 3px rgba(232, 116, 138, .18);
+        }
+
+        input::placeholder {
+            color: #cba9b0;
+        }
+
+        .select-wrap {
+            position: relative;
+        }
+
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--rose);
+            pointer-events: none;
+            font-size: .85rem;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .73rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--rose);
+            margin: 24px 0 14px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .error-msg {
+            display: none;
+            margin-top: 14px;
+            padding: 11px 14px;
+            background: var(--rose-lt);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: .83rem;
+            color: var(--rose-dk);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: .98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity .17s, transform .13s, box-shadow .17s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--rose) 0%, var(--warm) 100%);
+            color: var(--white);
+            box-shadow: 0 4px 18px rgba(232, 116, 138, .35);
+            margin-top: 24px;
+        }
+
+        .btn-primary:hover {
+            opacity: .92;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: none;
+        }
+
+        .btn-primary:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Success screen ── */
+        #success-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 3.2rem;
+            display: block;
+            margin-bottom: 12px;
+            animation: pop .4s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--rose-dk);
+            margin-bottom: 6px;
+        }
+
+        .success-sub {
+            font-size: .87rem;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .invite-box {
+            background: var(--rose-lt);
+            border: 1.5px dashed var(--rose);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            margin-bottom: 20px;
+        }
+
+        .invite-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .invite-url {
+            font-size: .82rem;
+            color: var(--rose-dk);
+            word-break: break-all;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            padding: 8px 18px;
+            background: var(--white);
+            border: 1.5px solid var(--rose);
+            border-radius: 8px;
+            color: var(--rose-dk);
+            font-family: inherit;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        .copy-btn:hover {
+            background: var(--rose-lt);
+        }
+
+        .next-steps {
+            background: #fdf2e9;
+            border: 1px solid #f5d5b0;
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            text-align: left;
+        }
+
+        .next-steps h3 {
+            font-size: .86rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .next-steps ol {
+            padding-left: 18px;
+            font-size: .83rem;
+            color: var(--muted);
+            line-height: 1.75;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+
+        <!-- ── Registration form ── -->
+        <div id="form-screen">
+            <div class="form-header">
+                <span class="moon">🪺</span>
+                <h1>Set Up Your Nest</h1>
+                <p>Signed in as <strong id="session-name">you</strong> — fill in the details below</p>
+            </div>
+
+            <form id="register-form" novalidate>
+                <div class="field">
+                    <label for="nestName">Nest Name</label>
+                    <input id="nestName" name="nestName" type="text" placeholder="e.g. Our Little Nest 🌙" required />
+                </div>
+
+                <div class="section-label">About You</div>
+
+                <div class="field">
+                    <label for="partnerAName">Your Name</label>
+                    <input id="partnerAName" name="partnerAName" type="text" placeholder="e.g. Mia" required />
+                </div>
+
+                <div class="section-label">Settings</div>
+
+                <div class="field">
+                    <label for="timezone">Timezone</label>
+                    <div class="select-wrap">
+                        <select id="timezone" name="timezone" required>
+                            <option value="">Select your timezone…</option>
+                            <option value="UTC">UTC — Coordinated Universal Time</option>
+                            <option value="Asia/Bangkok">ICT — Indochina / Bangkok (UTC+7)</option>
+                            <option value="Asia/Singapore">SGT — Singapore (UTC+8)</option>
+                            <option value="Asia/Tokyo">JST — Japan (UTC+9)</option>
+                            <option value="Asia/Kolkata">IST — India (UTC+5:30)</option>
+                            <option value="America/New_York">EST — Eastern US (UTC−5)</option>
+                            <option value="America/Los_Angeles">PST — Pacific US (UTC−8)</option>
+                            <option value="Europe/London">GMT — London (UTC+0)</option>
+                            <option value="Australia/Sydney">AEST — Sydney (UTC+10)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="error-msg" class="error-msg" role="alert"></div>
+
+                <button id="submit-btn" class="btn btn-primary" type="submit">
+                    Create Our Nest 🪺
+                </button>
+            </form>
+        </div>
+
+        <!-- ── Success screen ── -->
+        <div id="success-screen">
+            <span class="success-icon">🎉</span>
+            <p class="success-title">Nest Created!</p>
+            <p class="success-sub">Share the link below so your partner can join 💕</p>
+
+            <div class="invite-box">
+                <p class="invite-label">Invite Link</p>
+                <p class="invite-url" id="invite-url-display">—</p>
+                <button class="copy-btn" id="copy-btn">Copy Link</button>
+            </div>
+
+            <div class="next-steps">
+                <h3>🔔 What happens next?</h3>
+                <ol>
+                    <li>Your partner opens the invite link and joins</li>
+                    <li>Create a LINE group with both of you + add <strong>Lumi</strong></li>
+                    <li>Type <strong>/link [nestCode]</strong> in the group</li>
+                    <li>Lumi will confirm — your nest goes live 🌙</li>
+                </ol>
+            </div>
+        </div>
+
+    </div><!-- /card -->
+
+    <script>
+        // ── Load session to fill in name ──────────────────────────────────────────
+        (async () => {
+            try {
+                const res = await fetch('/auth/session');
+                const data = await res.json();
+                if (data?.name) {
+                    document.getElementById('session-name').textContent = data.name;
+                }
+                if (data?.lineUserId && data?.nestCode) {
+                    // User already has a nest — send them to the portal
+                    location.replace('/portal.html');
+                }
+            } catch { /* ignore — session name stays as "you" */ }
+        })();
+
+        // ── Register form submit ───────────────────────────────────────────────────
+        const form = document.getElementById('register-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMsg = document.getElementById('error-msg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+
+            const data = {
+                nestName: form.nestName.value.trim(),
+                partnerAName: form.partnerAName.value.trim(),
+                timezone: form.timezone.value,
+            };
+
+            if (!data.nestName || !data.partnerAName || !data.timezone) {
+                errorMsg.textContent = 'Please fill in all fields.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating…';
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                const json = await res.json();
+
+                if (!res.ok) throw new Error(json.error || 'Something went wrong.');
+
+                document.getElementById('invite-url-display').textContent = json.inviteUrl;
+                document.getElementById('form-screen').style.display = 'none';
+                document.getElementById('success-screen').style.display = '';
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Our Nest 🪺';
+            }
+        });
+
+        // ── Copy invite link ──────────────────────────────────────────────────────
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const url = document.getElementById('invite-url-display').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = 'Copied ✓';
+                setTimeout(() => { btn.textContent = 'Copy Link'; }, 2000);
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -349,8 +349,14 @@
                 if (sr.ok) session = await sr.json();
             } catch { /* ignore */ }
 
-            if (!session?.lineUserId || !session?.nestCode) {
+            if (!session?.lineUserId) {
+                // Not logged in at all — show sign-in prompt
                 renderNoSession();
+                return;
+            }
+            if (!session?.nestCode) {
+                // Logged in but nest not created yet — redirect to setup
+                location.replace('/setup.html');
                 return;
             }
 

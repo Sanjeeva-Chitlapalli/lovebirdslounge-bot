@@ -114,41 +114,37 @@ router.get('/line/callback', async (req, res) => {
       req.session.name        = name;
       req.session.nestCode    = null;
       console.log(`[Auth] Partner A pre-auth complete for ${name} (${lineUserId})`);
-      return res.redirect('/'); // index.html detects session and shows the nest creation form
+      return res.redirect('/setup.html'); // direct to setup page — no fetch-based detection needed
     }
 
-    // 3b ── Partner B join flow: find the nest by nestCode ─────────────────────
+    // 3b ── Partner B join flow: verify the nest exists ───────────────────────
+    // NOTE: We do NOT assign Partner B to the nest here.
+    // That is handled by POST /api/join after the user enters their name.
+    // auth.js is only responsible for: verifying the nest exists, setting the
+    // session, and routing the user to the right next step.
     const nest = await Nest.findOne({ nestCode: nestCode.toUpperCase() });
     if (!nest) {
       console.warn(`[Auth] Nest not found for nestCode: ${nestCode}`);
       return res.redirect('/?error=nest_not_found');
     }
 
-    // 4 ── Assign to first available partner slot ─────────────────────────────
-    if (!nest.partnerA.lineLoginId) {
-      nest.partnerA.lineLoginId = lineLoginId;
-      nest.partnerA.lineUserId  = lineUserId;
-      nest.partnerA.name        = nest.partnerA.name || name;
-      // Status stays 'pending_partner' until both partners have logged in
-    } else if (!nest.partnerB.lineLoginId) {
-      nest.partnerB.lineLoginId = lineLoginId;
-      nest.partnerB.lineUserId  = lineUserId;
-      nest.partnerB.name        = nest.partnerB.name || name;
-      nest.status = 'pending_line'; // Both partners authenticated; awaiting group link
-    } else {
-      // Both slots taken — user may already be registered
-      console.info(`[Auth] Both partner slots full for nest ${nestCode}`);
-    }
-
-    await nest.save();
-
-    // 5 ── Persist session ────────────────────────────────────────────────────
+    // 4 ── Persist session ────────────────────────────────────────────────────
     req.session.lineUserId  = lineUserId;
     req.session.lineLoginId = lineLoginId;
     req.session.name        = name;
     req.session.nestCode    = nestCode.toUpperCase();
 
-    return res.redirect('/portal.html');
+    // 5 ── Route to the right page ─────────────────────────────────────────────
+    // If Partner B slot is already filled (returning user) → go straight to portal.
+    // Otherwise → back to the join page where they enter their name.
+    const alreadyJoined = nest.partnerB?.lineLoginId === lineLoginId;
+    if (alreadyJoined) {
+      console.log(`[Auth] Partner B returning for nest ${nestCode}: ${name}`);
+      return res.redirect('/portal.html');
+    }
+
+    console.log(`[Auth] Partner B pre-auth complete for ${name} — redirecting to join page`);
+    return res.redirect(`/join/${nestCode.toUpperCase()}`);
   } catch (err) {
     console.error('[Auth] LINE OAuth callback error:', err.response?.data ?? err.message);
     return res.redirect('/?error=auth_failed');

@@ -416,13 +416,17 @@
                 let session = null;
                 try {
                     const sr = await fetch('/auth/session');
-                    session = await sr.json();
-                } catch { /* no session route yet */ }
+                    if (sr.ok) session = await sr.json();
+                } catch { /* ignore */ }
 
                 document.getElementById('loading-screen').style.display = 'none';
 
-                if (session?.lineUserId) {
-                    // Already signed in → show name form
+                if (session?.lineUserId && session?.nestCode) {
+                    // Already signed in AND already joined this nest → go to portal
+                    location.replace('/portal.html');
+                    return;
+                } else if (session?.lineUserId) {
+                    // Signed in but not yet joined → show name form
                     document.getElementById('session-name').textContent = session.name ?? 'you';
                     document.getElementById('form-screen').style.display = '';
                 } else {
@@ -487,6 +491,9 @@
 
                 document.getElementById('form-screen').style.display = 'none';
                 document.getElementById('success-screen').style.display = '';
+
+                // Redirect to portal after a short delay
+                setTimeout(() => { location.replace('/portal.html'); }, 2500);
             } catch (err) {
                 errorMsg.textContent = err.message;
                 errorMsg.style.display = 'block';

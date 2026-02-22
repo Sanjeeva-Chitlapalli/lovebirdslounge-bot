@@ -13,7 +13,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const RETRY_DELAYS_MS = [2_000, 4_000, 8_000];
 
 async function callGeminiWithRetry(prompt) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   let lastErr;
 
   for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt++) {

@@ -71,7 +71,7 @@ async function generateSummaries() {
         nest.partnerB?.name ?? 'Partner B',
       );
 
-      const model  = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model  = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const result = await model.generateContent(prompt);
       const summary = result.response.text().trim();
 

@@ -60,7 +60,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.post('/webhook', webhookRouter);
+app.use('/webhook',  webhookRouter);
 app.use('/api',     portalRouter);
 app.use('/auth',    authRouter);
 

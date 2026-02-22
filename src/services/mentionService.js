@@ -88,6 +88,8 @@ async function reply(event, nest) {
       nest.partnerA?.name ?? 'Partner A',
       nest.partnerB?.name ?? 'Partner B',
       nest.timezone,
+      nest.partnerA?.likesAndDislikes,
+      nest.partnerB?.likesAndDislikes
     );
 
     const replyText = await callGeminiWithRetry(prompt);

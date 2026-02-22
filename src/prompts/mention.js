@@ -9,11 +9,14 @@
  * @param {string} partnerAName
  * @param {string} partnerBName
  * @param {string} timezone      – IANA tz, for context label
+ * @param {string[]} partnerALikes – array of A's likes (optional)
+ * @param {string[]} partnerBLikes – array of B's likes (optional)
  * @returns {string}
  */
 function buildMentionPrompt(
   summary, todaysChat, question,
   partnerAName, partnerBName, timezone,
+  partnerALikes = [], partnerBLikes = []
 ) {
   const system =
     `You are Lumi 🌙, a warm and caring companion for ${partnerAName} and ${partnerBName}. ` +
@@ -23,9 +26,15 @@ function buildMentionPrompt(
     `Never reveal raw data — speak naturally.`;
 
   const tz    = timezone ? ` (${timezone})` : '';
+
+  const likesA = partnerALikes && partnerALikes.length ? partnerALikes.join(', ') : 'None known yet';
+  const likesB = partnerBLikes && partnerBLikes.length ? partnerBLikes.join(', ') : 'None known yet';
+
   const user  =
     `What I remember about this couple:\n` +
     `${summary || '(No prior context yet.)'}\n\n` +
+    `Known preferences for ${partnerAName}: ${likesA}\n` +
+    `Known preferences for ${partnerBName}: ${likesB}\n\n` +
     `Today's conversation${tz}:\n` +
     `${todaysChat || '(No messages today yet.)'}\n\n` +
     `They're asking: ${question}`;

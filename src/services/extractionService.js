@@ -4,6 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const Reminder = require('../models/Reminder');
 const Memory   = require('../models/Memory');
+const Message  = require('../models/Message');
 const { buildExtractionPrompt } = require('../prompts/extraction');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -67,6 +68,17 @@ async function extract(messageDoc, nest) {
     const datetime = new Date().toLocaleString('sv-SE', { timeZone: tz, hour12: false })
                                .replace(' ', 'T');
 
+    // ── Get 24 hour context ───────────────────────────────────────────────────
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentMessages = await Message.find({
+      nestId: nest._id,
+      timestamp: { $gte: twentyFourHoursAgo },
+    }).sort({ timestamp: 1 }).lean();
+
+    const recentHistory = recentMessages
+      .map((m) => `[${new Date(m.timestamp).toLocaleTimeString('sv-SE', { timeZone: tz, hour12: false })}] ${m.senderName}: ${m.text}`)
+      .join('\n');
+
     const prompt = buildExtractionPrompt(
       senderName,
       senderRole,
@@ -75,6 +87,9 @@ async function extract(messageDoc, nest) {
       tz,
       nest.partnerA?.name ?? 'Partner A',
       nest.partnerB?.name ?? 'Partner B',
+      recentHistory,
+      nest.partnerA?.likesAndDislikes ?? [],
+      nest.partnerB?.likesAndDislikes ?? []
     );
 
     // ── Call Gemini (with retry) ───────────────────────────────────────────────
@@ -178,6 +193,35 @@ async function extract(messageDoc, nest) {
         summary:      merged.join('\n'),
         messageCount: (current?.messageCount ?? 0) + 1,
       });
+    }
+
+    // ── Update likes and dislikes in Nest ─────────────────────────────────────
+    let nestUpdated = false;
+    if (Array.isArray(parsed.newPreferencesA) && parsed.newPreferencesA.length > 0) {
+      if (!nest.partnerA.likesAndDislikes) nest.partnerA.likesAndDislikes = [];
+      nest.partnerA.likesAndDislikes.push(...parsed.newPreferencesA);
+      // deduplicate
+      nest.partnerA.likesAndDislikes = [...new Set(nest.partnerA.likesAndDislikes)];
+      if (nest.partnerA.likesAndDislikes.length > 50) {
+        nest.partnerA.likesAndDislikes = nest.partnerA.likesAndDislikes.slice(-50);
+      }
+      nestUpdated = true;
+    }
+    if (Array.isArray(parsed.newPreferencesB) && parsed.newPreferencesB.length > 0) {
+      if (!nest.partnerB.likesAndDislikes) nest.partnerB.likesAndDislikes = [];
+      nest.partnerB.likesAndDislikes.push(...parsed.newPreferencesB);
+      // deduplicate
+      nest.partnerB.likesAndDislikes = [...new Set(nest.partnerB.likesAndDislikes)];
+      if (nest.partnerB.likesAndDislikes.length > 50) {
+        nest.partnerB.likesAndDislikes = nest.partnerB.likesAndDislikes.slice(-50);
+      }
+      nestUpdated = true;
+    }
+    if (nestUpdated) {
+      // mongoose markModified might be needed for nested arrays without schemas
+      nest.markModified('partnerA.likesAndDislikes');
+      nest.markModified('partnerB.likesAndDislikes');
+      await nest.save();
     }
 
     console.log(

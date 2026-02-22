@@ -9,6 +9,7 @@ const partnerSchema = new mongoose.Schema(
     lineLoginId: { type: String, default: null }, // LINE Login OAuth UID (for portal auth)
     name:        { type: String, default: null },
     dmActive:    { type: Boolean, default: false }, // true once they follow the bot
+    likesAndDislikes: { type: [String], default: [] }, // Learned preferences
   },
   { _id: false }
 );

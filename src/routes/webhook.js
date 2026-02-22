@@ -53,8 +53,9 @@ router.post('/', (req, res) => {
 // ── Event dispatcher ──────────────────────────────────────────────────────────
 async function handleEvent(event) {
   switch (event.type) {
-    case 'join':    return handleJoin(event);
-    case 'follow':  return handleFollow(event);
+    case 'join':     return handleJoin(event);
+    case 'follow':   return handleFollow(event);
+    case 'unfollow': return handleUnfollow(event);
     case 'message':
       if (event.message?.type === 'text') return handleTextMessage(event);
       break;
@@ -223,6 +224,38 @@ async function handleFollow(event) {
     console.log(`[Webhook] Welcome DM replied to ${me.name ?? userId}`);
   } catch (err) {
     console.error('[Webhook] handleFollow error:', err.message);
+  }
+}
+
+// ── Handler: unfollow event (user blocked the bot) ────────────────────────────
+async function handleUnfollow(event) {
+  const userId = event.source?.userId;
+  if (!userId) return;
+
+  try {
+    const nest = await Nest.findOne({
+      $or: [
+        { 'partnerA.lineUserId': userId },
+        { 'partnerB.lineUserId': userId },
+      ],
+    });
+
+    if (!nest) {
+      console.log(`[Webhook] Unfollow from unregistered user ${userId} — ignored`);
+      return;
+    }
+
+    const isA = nest.partnerA?.lineUserId === userId;
+
+    // Mark DM as inactive
+    if (isA) { nest.partnerA.dmActive = false; }
+    else      { nest.partnerB.dmActive = false; }
+    
+    await nest.save();
+
+    console.log(`[Webhook] User ${userId} unfollowed (dmActive marked false)`);
+  } catch (err) {
+    console.error('[Webhook] handleUnfollow error:', err.message);
   }
 }
 

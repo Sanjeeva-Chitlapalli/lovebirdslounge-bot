@@ -5,7 +5,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Reminder = require('../models/Reminder');
 const Memory   = require('../models/Memory');
 const Message  = require('../models/Message');
-const { buildExtractionPrompt } = require('../prompts/extraction');
+const { buildExtractionPrompt, buildReflectionPrompt } = require('../prompts/extraction');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -79,10 +79,38 @@ async function extract(messageDoc, nest) {
       .map((m) => `[${new Date(m.timestamp).toLocaleTimeString('sv-SE', { timeZone: tz, hour12: false })}] ${m.senderName}: ${m.text}`)
       .join('\n');
 
-    const prompt = buildExtractionPrompt(
+    // ── STEP 1: Basic Fact Extraction ─────────────────────────────────────────
+    const extractionPrompt = buildExtractionPrompt(
       senderName,
       senderRole,
       messageDoc.text,
+      datetime,
+      tz,
+      nest.partnerA?.name ?? 'Partner A',
+      nest.partnerB?.name ?? 'Partner B',
+      recentHistory
+    );
+
+    let rawExtraction;
+    try {
+      rawExtraction = await callGeminiWithRetry(extractionPrompt);
+      console.log(`[Extraction] Step 1 Raw JSON:\n${rawExtraction}`);
+    } catch (err) {
+      console.error(`[Extraction] Step 1 failed for nest=${nest.nestCode}: ${err.message}`);
+      return;
+    }
+
+    let extractedFacts;
+    try {
+      extractedFacts = parseJsonSafe(rawExtraction);
+    } catch (parseErr) {
+      console.warn(`[Extraction] Step 1 JSON parse failed: ${parseErr.message}`);
+      return;
+    }
+
+    // ── STEP 2: Thoughtful Reflection & Reminders ──────────────────────────────
+    const reflectionPrompt = buildReflectionPrompt(
+      JSON.stringify(extractedFacts),
       datetime,
       tz,
       nest.partnerA?.name ?? 'Partner A',
@@ -92,26 +120,28 @@ async function extract(messageDoc, nest) {
       nest.partnerB?.likesAndDislikes ?? []
     );
 
-    // ── Call Gemini (with retry) ───────────────────────────────────────────────
-    let raw;
+    let rawReflection;
     try {
-      raw = await callGeminiWithRetry(prompt);
+      rawReflection = await callGeminiWithRetry(reflectionPrompt);
+      console.log(`[Extraction] Step 2 Raw JSON:\n${rawReflection}`);
     } catch (err) {
-      console.error(`[Extraction] Gemini permanently failed for nest=${nest.nestCode}: ${err.message}`);
+      console.error(`[Extraction] Step 2 failed for nest=${nest.nestCode}: ${err.message}`);
       return;
     }
 
-    // ── Parse JSON ────────────────────────────────────────────────────────────
-    let parsed;
+    let reflectedData;
     try {
-      parsed = parseJsonSafe(raw);
+      reflectedData = parseJsonSafe(rawReflection);
     } catch (parseErr) {
-      console.warn(
-        `[Extraction] JSON parse failed for nest=${nest.nestCode}\n` +
-        `  Raw (300 chars): ${raw.slice(0, 300)}\n  Error: ${parseErr.message}`
-      );
+      console.warn(`[Extraction] Step 2 JSON parse failed: ${parseErr.message}`);
       return;
     }
+
+    // ── Merge Data ────────────────────────────────────────────────────────────
+    const parsed = {
+      ...extractedFacts,
+      ...reflectedData,
+    };
 
     // ── Update messageDoc.extracted ───────────────────────────────────────────
     const safeEvents = (Array.isArray(parsed.events) ? parsed.events : []).map(ev => {

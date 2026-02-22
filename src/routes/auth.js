@@ -107,7 +107,13 @@ router.get('/line/callback', async (req, res) => {
     // In production, lineUserId would come from a Messaging API webhook event.
     const lineUserId = lineLoginId;
 
-    // ── Helper: save session before redirecting (prevents race condition) ─────
+    // ── Helper: encode user payload into URL hash (never sent to server) ───────
+    const encodeHash = (extra = {}) => {
+      const payload = { lineUserId, name, ...extra };
+      return Buffer.from(JSON.stringify(payload)).toString('base64url');
+    };
+
+    // ── Helper: save session then redirect (prevents race condition) ──────────
     const saveAndRedirect = (url) =>
       new Promise((resolve, reject) =>
         req.session.save((err) => {
@@ -123,7 +129,7 @@ router.get('/line/callback', async (req, res) => {
       req.session.name        = name;
       req.session.nestCode    = null;
       console.log(`[Auth] Partner A pre-auth complete for ${name} (${lineUserId})`);
-      return saveAndRedirect('/setup.html');
+      return saveAndRedirect(`/setup.html#u=${encodeHash()}`);
     }
 
     // 3b ── Partner B join flow: verify the nest exists ───────────────────────
@@ -153,7 +159,7 @@ router.get('/line/callback', async (req, res) => {
     }
 
     console.log(`[Auth] Partner B pre-auth complete for ${name} — redirecting to join page`);
-    return saveAndRedirect(`/join/${nestCode.toUpperCase()}`);
+    return saveAndRedirect(`/join/${nestCode.toUpperCase()}#u=${encodeHash({ nestCode: nestCode.toUpperCase() })}`);
   } catch (err) {
     console.error('[Auth] LINE OAuth callback error:', err.response?.data ?? err.message);
     return res.redirect('/?error=auth_failed');

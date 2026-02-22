@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LoveBirds Lounge — Join Your Nest</title>
+    <title>LoveBirds Lounge â€” Join Your Nest</title>
     <meta name="description"
-        content="Your partner has invited you to join LoveBirds Lounge — connect with Lumi, your AI couple companion." />
+        content="Your partner has invited you to join LoveBirds Lounge â€” connect with Lumi, your AI couple companion." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
@@ -329,9 +329,9 @@
         <!-- Loading state (default) -->
         <div id="loading-screen">
             <div class="hero">
-                <span class="moon">🌙</span>
+                <span class="moon">ðŸŒ™</span>
                 <h1>LoveBirds Lounge</h1>
-                <p>Loading your nest…</p>
+                <p>Loading your nestâ€¦</p>
             </div>
             <div class="nest-info">
                 <div class="row"><span class="key">Nest</span><span class="val"><span class="skeleton"></span></span>
@@ -341,25 +341,25 @@
             </div>
         </div>
 
-        <!-- Auth screen — prompt Partner B to sign in with LINE -->
+        <!-- Auth screen â€” prompt Partner B to sign in with LINE -->
         <div id="auth-screen">
             <div class="hero">
-                <span class="moon">💌</span>
+                <span class="moon">ðŸ’Œ</span>
                 <h1>You've Been Invited!</h1>
                 <p id="invite-msg">Your partner has set up a nest. Sign in with LINE to join them.</p>
             </div>
             <div class="nest-info" id="nest-info-box">
-                <div class="row"><span class="key">Nest</span><span class="val" id="info-nestName">—</span></div>
-                <div class="row"><span class="key">Partner A</span><span class="val" id="info-partnerA">—</span></div>
-                <div class="row"><span class="key">Status</span><span class="badge">Waiting for you 💛</span></div>
+                <div class="row"><span class="key">Nest</span><span class="val" id="info-nestName">â€”</span></div>
+                <div class="row"><span class="key">Partner A</span><span class="val" id="info-partnerA">â€”</span></div>
+                <div class="row"><span class="key">Status</span><span class="badge">Waiting for you ðŸ’›</span></div>
             </div>
-            <button id="line-login-btn" class="btn btn-primary">Sign in with LINE 💚</button>
+            <button id="line-login-btn" class="btn btn-primary">Sign in with LINE ðŸ’š</button>
         </div>
 
         <!-- Name input screen (after OAuth) -->
         <div id="form-screen" style="display:none">
             <div class="hero">
-                <span class="moon">🪺</span>
+                <span class="moon">ðŸªº</span>
                 <h1>Almost There!</h1>
                 <p>Signed in as <strong id="session-name">you</strong>. Just tell Lumi your name.</p>
             </div>
@@ -370,22 +370,22 @@
                 </div>
                 <div id="error-msg" class="error-msg" role="alert"></div>
                 <button id="submit-btn" class="btn btn-primary" type="submit" style="margin-top:8px">Join the Nest
-                    💛</button>
+                    ðŸ’›</button>
             </form>
         </div>
 
         <!-- Success -->
         <div id="success-screen">
-            <span class="success-icon">🎉</span>
+            <span class="success-icon">ðŸŽ‰</span>
             <p class="success-title">You're In!</p>
-            <p class="success-sub" id="success-sub">Welcome to your nest 🌙</p>
+            <p class="success-sub" id="success-sub">Welcome to your nest ðŸŒ™</p>
             <div class="instructions-box">
-                <h3>🔗 Connect Lumi to your group</h3>
+                <h3>ðŸ”— Connect Lumi to your group</h3>
                 <ol id="instructions-list">
                     <li>Create a LINE group with both of you</li>
                     <li>Add <strong>@LumiBot</strong> to the group</li>
                     <li>Type <strong>/link [nestCode]</strong> in the group chat</li>
-                    <li>Lumi will confirm — your nest goes live 🌙</li>
+                    <li>Lumi will confirm â€” your nest goes live ðŸŒ™</li>
                 </ol>
             </div>
         </div>
@@ -393,10 +393,32 @@
     </div><!-- /card -->
 
     <script>
-        // Parse nestCode from path: /join/:nestCode
+        const STORAGE_KEY = 'lbl_user';
         const nestCode = location.pathname.split('/').filter(Boolean).pop() || '';
 
-        // ── 1. Load nest info ─────────────────────────────────────────────────────
+        // â”€â”€ 1. Parse #u= hash set by auth.js for Partner B â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        (function parseHash() {
+            const hash = location.hash;
+            if (hash && hash.startsWith('#u=')) {
+                try {
+                    const b64 = hash.slice(3).replace(/-/g, '+').replace(/_/g, '/');
+                    const data = JSON.parse(atob(b64));
+                    if (data.lineUserId) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    }
+                } catch { /* ignore */ }
+                history.replaceState(null, '', location.pathname);
+            }
+        })();
+
+        // â”€â”€ 2. Resolve identity from localStorage or server session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        let currentUser = null;
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) currentUser = JSON.parse(stored);
+        } catch { /* ignore */ }
+
+        // â”€â”€ 3. Load nest info and decide which screen to show â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         (async () => {
             try {
                 const res = await fetch(`/api/nest/${nestCode}`);
@@ -409,28 +431,32 @@
                 }
 
                 const nest = data.nest;
-                document.getElementById('info-nestName').textContent = nest.nestName || '—';
-                document.getElementById('info-partnerA').textContent = nest.partnerA?.name || '—';
+                document.getElementById('info-nestName').textContent = nest.nestName || 'â€”';
+                document.getElementById('info-partnerA').textContent = nest.partnerA?.name || 'â€”';
 
-                // Check session
-                let session = null;
+                // Also try server session and merge into currentUser
                 try {
                     const sr = await fetch('/auth/session');
-                    if (sr.ok) session = await sr.json();
+                    if (sr.ok) {
+                        const sd = await sr.json();
+                        if (sd?.lineUserId) {
+                            currentUser = { lineUserId: sd.lineUserId, name: sd.name, nestCode: sd.nestCode };
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+                        }
+                    }
                 } catch { /* ignore */ }
 
                 document.getElementById('loading-screen').style.display = 'none';
 
-                if (session?.lineUserId && session?.nestCode) {
-                    // Already signed in AND already joined this nest → go to portal
+                if (currentUser?.lineUserId && currentUser?.nestCode) {
+                    // Already joined â†’ go to portal
                     location.replace('/portal.html');
-                    return;
-                } else if (session?.lineUserId) {
-                    // Signed in but not yet joined → show name form
-                    document.getElementById('session-name').textContent = session.name ?? 'you';
+                } else if (currentUser?.lineUserId) {
+                    // Signed in (have lineUserId) but not yet joined â†’ show name form
+                    document.getElementById('session-name').textContent = currentUser.name ?? 'you';
                     document.getElementById('form-screen').style.display = '';
                 } else {
-                    // Not signed in → show auth prompt
+                    // Not signed in â†’ show auth prompt
                     document.getElementById('invite-msg').textContent =
                         `${nest.partnerA?.name ?? 'Your partner'} has set up a nest called "${nest.nestName}". Sign in with LINE to join!`;
                     document.getElementById('auth-screen').style.display = '';
@@ -441,12 +467,12 @@
             }
         })();
 
-        // ── 2. LINE OAuth redirect ────────────────────────────────────────────────
+        // â”€â”€ 4. LINE OAuth redirect â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         document.getElementById('line-login-btn').addEventListener('click', () => {
             location.href = `/auth/line?nestCode=${encodeURIComponent(nestCode)}`;
         });
 
-        // ── 3. Join form submit ───────────────────────────────────────────────────
+        // â”€â”€ 5. Join form submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const form = document.getElementById('join-form');
         const submitBtn = document.getElementById('submit-btn');
         const errorMsg = document.getElementById('error-msg');
@@ -462,24 +488,39 @@
                 return;
             }
 
+            if (!currentUser?.lineUserId) {
+                errorMsg.textContent = 'Session lost â€” please go back and sign in again.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Joining…';
+            submitBtn.textContent = 'Joiningâ€¦';
 
             try {
                 const res = await fetch('/api/join', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nestCode, partnerBName }),
+                    body: JSON.stringify({
+                        nestCode,
+                        partnerBName,
+                        lineUserId: currentUser.lineUserId, // localStorage fallback
+                    }),
                 });
                 const json = await res.json();
 
                 if (!res.ok) throw new Error(json.error || 'Something went wrong.');
 
+                // Persist nestCode to localStorage so portal check works
+                if (currentUser) {
+                    currentUser.nestCode = nestCode;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+                }
+
                 document.getElementById('success-sub').textContent =
                     `Welcome, ${partnerBName}! ${json.nestName ? `Your nest "${json.nestName}" is almost ready.` : ''}`;
 
                 if (json.instructions) {
-                    // Replace instruction list with server message
                     const ol = document.getElementById('instructions-list');
                     ol.innerHTML = '';
                     json.instructions.split('\n').filter(l => l.trim()).forEach(line => {
@@ -498,7 +539,7 @@
                 errorMsg.textContent = err.message;
                 errorMsg.style.display = 'block';
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Join the Nest 💛';
+                submitBtn.textContent = 'Join the Nest ðŸ’›';
             }
         });
     </script>

@@ -8,9 +8,21 @@ const Nest = require('../models/Nest');
 
 // ── Middleware helpers ────────────────────────────────────────────────────────
 
-/** Require an active LINE OAuth session; return 401 otherwise. */
+/** Require an active LINE OAuth session; fall back to lineUserId in body.
+ *  Sets req.resolvedUserId for downstream handlers.
+ */
 function requireSession(req, res, next) {
-  if (req.session?.lineUserId) return next();
+  // Primary: server session (cookie)
+  if (req.session?.lineUserId) {
+    req.resolvedUserId = req.session.lineUserId;
+    return next();
+  }
+  // Fallback: lineUserId sent from localStorage by the frontend
+  const bodyId = req.body?.lineUserId;
+  if (bodyId && typeof bodyId === 'string' && bodyId.length > 0) {
+    req.resolvedUserId = bodyId;
+    return next();
+  }
   return res.status(401).json({ error: 'Authentication required. Please log in via LINE.' });
 }
 
@@ -49,9 +61,9 @@ router.post('/register', requireSession, async (req, res) => {
           nestCode,
           nestName,
           partnerA: {
-            lineLoginId: req.session.lineUserId,
-            lineUserId:  req.session.lineUserId, // MVP: same ID (see auth.js)
-            name:        partnerAName || req.session.name || null,
+            lineLoginId: req.resolvedUserId,
+            lineUserId:  req.resolvedUserId, // MVP: same ID (see auth.js)
+            name:        partnerAName || req.session?.name || null,
             dmActive:    false,
           },
           timezone,
@@ -67,9 +79,9 @@ router.post('/register', requireSession, async (req, res) => {
     const inviteUrl = `${process.env.BASE_URL}/join/${nest.nestCode}`;
 
     // Update session so Partner A can visit /portal.html immediately after
-    req.session.nestCode = nest.nestCode;
+    if (req.session) req.session.nestCode = nest.nestCode;
 
-    console.log(`[Portal] Nest created — ${nest.nestCode} by ${nest.partnerA.name ?? req.session.lineUserId}`);
+    console.log(`[Portal] Nest created — ${nest.nestCode} by ${nest.partnerA.name ?? req.resolvedUserId}`);
 
     return res.status(201).json({
       success:   true,
@@ -124,9 +136,9 @@ router.post('/join', requireSession, async (req, res) => {
       });
     }
 
-    nest.partnerB.lineLoginId = req.session.lineUserId;
-    nest.partnerB.lineUserId  = req.session.lineUserId; // MVP: same ID
-    nest.partnerB.name        = partnerBName || req.session.name || null;
+    nest.partnerB.lineLoginId = req.resolvedUserId;
+    nest.partnerB.lineUserId  = req.resolvedUserId; // MVP: same ID
+    nest.partnerB.name        = partnerBName || req.session?.name || null;
     nest.status               = 'pending_line';
     await nest.save();
 

@@ -414,22 +414,61 @@
     </div><!-- /card -->
 
     <script>
-        // ── Load session to fill in name ──────────────────────────────────────────
-        (async () => {
-            try {
-                const res = await fetch('/auth/session');
-                const data = await res.json();
-                if (data?.name) {
-                    document.getElementById('session-name').textContent = data.name;
-                }
-                if (data?.lineUserId && data?.nestCode) {
-                    // User already has a nest — send them to the portal
-                    location.replace('/portal.html');
-                }
-            } catch { /* ignore — session name stays as "you" */ }
+        const STORAGE_KEY = 'lbl_user';
+
+        // ── 1. Parse #u= hash set by auth.js and store in localStorage ───────────
+        (function parseHash() {
+            const hash = location.hash;
+            if (hash && hash.startsWith('#u=')) {
+                try {
+                    // base64url → base64 → JSON
+                    const b64 = hash.slice(3).replace(/-/g, '+').replace(/_/g, '/');
+                    const data = JSON.parse(atob(b64));
+                    if (data.lineUserId) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    }
+                } catch { /* ignore bad hash */ }
+                history.replaceState(null, '', location.pathname); // clean URL
+            }
         })();
 
-        // ── Register form submit ───────────────────────────────────────────────────
+        // ── 2. Resolve identity: localStorage → session → redirect home ──────────
+        let currentUser = null;
+
+        (async () => {
+            // Fast path: localStorage already has the data
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) currentUser = JSON.parse(stored);
+            } catch { /* corrupt storage */ }
+
+            // Also try the session (may work if cookies are fine)
+            try {
+                const sr = await fetch('/auth/session');
+                if (sr.ok) {
+                    const sd = await sr.json();
+                    if (sd?.lineUserId) {
+                        currentUser = { lineUserId: sd.lineUserId, name: sd.name, nestCode: sd.nestCode };
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+                    }
+                }
+            } catch { /* ignore — localStorage is the fallback */ }
+
+            if (!currentUser?.lineUserId) {
+                location.replace('/?error=not_logged_in');
+                return;
+            }
+
+            // Already has a nest → go to portal
+            if (currentUser.nestCode) {
+                location.replace('/portal.html');
+                return;
+            }
+
+            document.getElementById('session-name').textContent = currentUser.name ?? 'you';
+        })();
+
+        // ── 3. Register form submit ───────────────────────────────────────────────
         const form = document.getElementById('register-form');
         const submitBtn = document.getElementById('submit-btn');
         const errorMsg = document.getElementById('error-msg');
@@ -438,14 +477,18 @@
             e.preventDefault();
             errorMsg.style.display = 'none';
 
-            const data = {
-                nestName: form.nestName.value.trim(),
-                partnerAName: form.partnerAName.value.trim(),
-                timezone: form.timezone.value,
-            };
+            const nestName = form.nestName.value.trim();
+            const partnerAName = form.partnerAName.value.trim();
+            const timezone = form.timezone.value;
 
-            if (!data.nestName || !data.partnerAName || !data.timezone) {
+            if (!nestName || !partnerAName || !timezone) {
                 errorMsg.textContent = 'Please fill in all fields.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (!currentUser?.lineUserId) {
+                errorMsg.textContent = 'Session lost — please go back and log in again.';
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -457,11 +500,22 @@
                 const res = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
+                    body: JSON.stringify({
+                        nestName,
+                        partnerAName,
+                        timezone,
+                        lineUserId: currentUser.lineUserId, // localStorage fallback
+                    }),
                 });
                 const json = await res.json();
 
                 if (!res.ok) throw new Error(json.error || 'Something went wrong.');
+
+                // Persist nestCode so returning to /setup.html goes straight to portal
+                if (json.nestCode) {
+                    currentUser.nestCode = json.nestCode;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+                }
 
                 document.getElementById('invite-url-display').textContent = json.inviteUrl;
                 document.getElementById('form-screen').style.display = 'none';
@@ -474,7 +528,7 @@
             }
         });
 
-        // ── Copy invite link ──────────────────────────────────────────────────────
+        // ── 4. Copy invite link ───────────────────────────────────────────────────
         document.getElementById('copy-btn').addEventListener('click', () => {
             const url = document.getElementById('invite-url-display').textContent;
             navigator.clipboard.writeText(url).then(() => {

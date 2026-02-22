@@ -519,7 +519,7 @@
 
                 document.getElementById('invite-url-display').textContent = json.inviteUrl;
                 document.getElementById('form-screen').style.display = 'none';
-                document.getElementById('success-screen').style.display = '';
+                document.getElementById('success-screen').style.display = 'block';
             } catch (err) {
                 errorMsg.textContent = err.message;
                 errorMsg.style.display = 'block';

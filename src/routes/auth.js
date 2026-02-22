@@ -107,6 +107,15 @@ router.get('/line/callback', async (req, res) => {
     // In production, lineUserId would come from a Messaging API webhook event.
     const lineUserId = lineLoginId;
 
+    // ── Helper: save session before redirecting (prevents race condition) ─────
+    const saveAndRedirect = (url) =>
+      new Promise((resolve, reject) =>
+        req.session.save((err) => {
+          if (err) reject(err);
+          else { res.redirect(url); resolve(); }
+        })
+      );
+
     // 3a ── Partner A pre-auth: no nest exists yet — just save session ─────────
     if (nestCode === 'new') {
       req.session.lineUserId  = lineUserId;
@@ -114,7 +123,7 @@ router.get('/line/callback', async (req, res) => {
       req.session.name        = name;
       req.session.nestCode    = null;
       console.log(`[Auth] Partner A pre-auth complete for ${name} (${lineUserId})`);
-      return res.redirect('/setup.html'); // direct to setup page — no fetch-based detection needed
+      return saveAndRedirect('/setup.html');
     }
 
     // 3b ── Partner B join flow: verify the nest exists ───────────────────────
@@ -140,11 +149,11 @@ router.get('/line/callback', async (req, res) => {
     const alreadyJoined = nest.partnerB?.lineLoginId === lineLoginId;
     if (alreadyJoined) {
       console.log(`[Auth] Partner B returning for nest ${nestCode}: ${name}`);
-      return res.redirect('/portal.html');
+      return saveAndRedirect('/portal.html');
     }
 
     console.log(`[Auth] Partner B pre-auth complete for ${name} — redirecting to join page`);
-    return res.redirect(`/join/${nestCode.toUpperCase()}`);
+    return saveAndRedirect(`/join/${nestCode.toUpperCase()}`);
   } catch (err) {
     console.error('[Auth] LINE OAuth callback error:', err.response?.data ?? err.message);
     return res.redirect('/?error=auth_failed');

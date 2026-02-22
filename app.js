@@ -57,7 +57,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Static Files ──────────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    // Prevent browser caching of HTML pages during dev/testing
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/webhook',  webhookRouter);

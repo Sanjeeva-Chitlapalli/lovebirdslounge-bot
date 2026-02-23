@@ -27,7 +27,7 @@ async function sendDueReminders() {
       }
 
       // Determine which partner this reminder is for
-      const isA     = nest.partnerA?.lineUserId === reminder.recipientLineUserId;
+      const isA     = nest.partnerA?.lineBackendId === reminder.recipientLineUserId;
       const partner = isA ? nest.partnerA : nest.partnerB;
 
       // b) Skip if partner hasn't followed the bot yet

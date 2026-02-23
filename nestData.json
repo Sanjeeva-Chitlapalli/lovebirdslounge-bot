@@ -1,11 +1,13 @@
 {
   "nestName": "Test Nest",
   "partnerA": {
-    "name": "Person A",
-    "lineUserId": "vortex29474"
+    "name": "Niri",
+    "lineUserId": "niri754",
+    "gender": "female"
   },
   "partnerB": {
     "name": "Sanjeev",
-    "lineUserId": "chitlapalli"
+    "lineUserId": "chitlapalli",
+    "gender": "male"
   }
 }

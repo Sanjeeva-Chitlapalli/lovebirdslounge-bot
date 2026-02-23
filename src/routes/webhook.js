@@ -107,13 +107,29 @@ async function handleTextMessage(event) {
 
   // Resolve display name without an API call if possible
   let senderName = resolveSenderName(senderId, nest);
+  let senderProfile = null;
   if (!senderName) {
     try {
-      const profile = await getClient().getGroupMemberProfile(groupChatId, senderId);
-      senderName = profile.displayName;
+      senderProfile = await getClient().getGroupMemberProfile(groupChatId, senderId);
+      senderName = senderProfile.displayName;
     } catch {
       senderName = senderId; // graceful fallback
     }
+  }
+
+  // Auto-map backend ID based on name match if it is missing
+  let isA = nest.partnerA?.name && senderName.toLowerCase() === nest.partnerA.name.toLowerCase();
+  let isB = nest.partnerB?.name && senderName.toLowerCase() === nest.partnerB.name.toLowerCase();
+
+  if (isA && !nest.partnerA.lineBackendId) {
+    nest.partnerA.lineBackendId = senderId;
+    nest.partnerA.name = senderName; // Update with accurate formatting
+    await nest.save();
+  }
+  if (isB && !nest.partnerB.lineBackendId) {
+    nest.partnerB.lineBackendId = senderId;
+    nest.partnerB.name = senderName; 
+    await nest.save();
   }
 
   // e) Save message
@@ -190,19 +206,43 @@ async function handleFollow(event) {
   if (!userId) return;
 
   try {
-    const nest = await Nest.findOne({
+    let nest = await Nest.findOne({
       $or: [
-        { 'partnerA.lineUserId': userId },
-        { 'partnerB.lineUserId': userId },
+        { 'partnerA.lineBackendId': userId },
+        { 'partnerB.lineBackendId': userId },
       ],
     });
+
+    // Fallback: If not found by backend ID, try matching their profile display name to names in pending/active nests
+    if (!nest) {
+      try {
+        const profile = await getClient().getProfile(userId);
+        if (profile?.displayName) {
+          const nameRegex = new RegExp(`^${profile.displayName}$`, 'i');
+          nest = await Nest.findOne({
+            $or: [
+              { 'partnerA.name': nameRegex },
+              { 'partnerB.name': nameRegex },
+            ],
+          });
+          if (nest) {
+             const matchedA = nest.partnerA?.name && nest.partnerA.name.toLowerCase() === profile.displayName.toLowerCase();
+             if (matchedA) nest.partnerA.lineBackendId = userId;
+             else if (nest.partnerB?.name) nest.partnerB.lineBackendId = userId;
+             // We'll save just down below
+          }
+        }
+      } catch (e) {
+        console.warn(`[Webhook] Could not fetch profile for auto-linking: ${e.message}`);
+      }
+    }
 
     if (!nest) {
       console.log(`[Webhook] Follow from unregistered user ${userId} — ignored`);
       return;
     }
 
-    const isA = nest.partnerA?.lineUserId === userId;
+    const isA = nest.partnerA?.lineBackendId === userId;
     const me      = isA ? nest.partnerA : nest.partnerB;
     const partner = isA ? nest.partnerB : nest.partnerA;
 
@@ -235,8 +275,8 @@ async function handleUnfollow(event) {
   try {
     const nest = await Nest.findOne({
       $or: [
-        { 'partnerA.lineUserId': userId },
-        { 'partnerB.lineUserId': userId },
+        { 'partnerA.lineBackendId': userId },
+        { 'partnerB.lineBackendId': userId },
       ],
     });
 
@@ -245,7 +285,7 @@ async function handleUnfollow(event) {
       return;
     }
 
-    const isA = nest.partnerA?.lineUserId === userId;
+    const isA = nest.partnerA?.lineBackendId === userId;
 
     // Mark DM as inactive
     if (isA) { nest.partnerA.dmActive = false; }
@@ -261,8 +301,8 @@ async function handleUnfollow(event) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function resolveSenderName(userId, nest) {
-  if (nest.partnerA?.lineUserId === userId) return nest.partnerA.name ?? null;
-  if (nest.partnerB?.lineUserId === userId) return nest.partnerB.name ?? null;
+  if (nest.partnerA?.lineBackendId === userId) return nest.partnerA.name ?? null;
+  if (nest.partnerB?.lineBackendId === userId) return nest.partnerB.name ?? null;
   return null;
 }
 

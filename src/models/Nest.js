@@ -5,10 +5,12 @@ const mongoose = require('mongoose');
 // ── Partner sub-document ──────────────────────────────────────────────────────
 const partnerSchema = new mongoose.Schema(
   {
-    lineUserId:  { type: String, default: null }, // LINE Messaging API UID (for DMs)
-    lineLoginId: { type: String, default: null }, // LINE Login OAuth UID (for portal auth)
-    name:        { type: String, default: null },
-    dmActive:    { type: Boolean, default: false }, // true once they follow the bot
+    lineUserId:    { type: String, default: null }, // LINE Messaging API UID (for DMs) -> Now acts as user's chosen custom username (e.g., vortex29474)
+    lineBackendId: { type: String, default: null }, // Actual LINE internal ID (U2345...)
+    lineLoginId:   { type: String, default: null }, // LINE Login OAuth UID (for portal auth)
+    name:          { type: String, default: null },
+    gender:        { type: String, default: null },
+    dmActive:      { type: Boolean, default: false }, // true once they follow the bot
     likesAndDislikes: { type: [String], default: [] }, // Learned preferences
   },
   { _id: false }

@@ -31,11 +31,13 @@ async function seed() {
       nestName: data.nestName,
       partnerA: {
         name: data.partnerA.name,
-        lineUserId: data.partnerA?.lineUserId || null
+        lineUserId: data.partnerA?.lineUserId || null,
+        gender: data.partnerA?.gender || null
       },
       partnerB: {
         name: data.partnerB.name,
-        lineUserId: data.partnerB?.lineUserId || null
+        lineUserId: data.partnerB?.lineUserId || null,
+        gender: data.partnerB?.gender || null
       },
       status: 'pending_line' // Set to pending_line so /link command works immediately
     });

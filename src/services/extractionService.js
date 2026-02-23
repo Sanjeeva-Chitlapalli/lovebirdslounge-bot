@@ -56,7 +56,7 @@ async function extract(messageDoc, nest) {
   try {
     // ── Determine sender role ─────────────────────────────────────────────────
     const senderRole =
-      messageDoc.senderId === nest.partnerA?.lineUserId ? 'A' : 'B';
+      messageDoc.senderId === nest.partnerA?.lineBackendId ? 'A' : 'B';
 
     const senderName =
       senderRole === 'A'
@@ -65,8 +65,22 @@ async function extract(messageDoc, nest) {
 
     // ── Build prompt ──────────────────────────────────────────────────────────
     const tz       = nest.timezone ?? 'Asia/Bangkok';
-    const datetime = new Date().toLocaleString('sv-SE', { timeZone: tz, hour12: false })
-                               .replace(' ', 'T');
+    
+    const msgDate = new Date(messageDoc.timestamp || Date.now());
+    let datetime;
+    try {
+      const dtParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false, timeZoneName: 'longOffset'
+      }).formatToParts(msgDate);
+      const p = {};
+      for (const part of dtParts) p[part.type] = part.value;
+      const tzOffset = p.timeZoneName.replace('GMT', '') || 'Z';
+      datetime = `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${tzOffset}`;
+    } catch {
+      datetime = msgDate.toISOString();
+    }
 
     // ── Get 24 hour context ───────────────────────────────────────────────────
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -88,7 +102,8 @@ async function extract(messageDoc, nest) {
       tz,
       nest.partnerA?.name ?? 'Partner A',
       nest.partnerB?.name ?? 'Partner B',
-      recentHistory
+      recentHistory,
+      nest
     );
 
     let rawExtraction;
@@ -120,7 +135,8 @@ async function extract(messageDoc, nest) {
       nest.partnerB?.name ?? 'Partner B',
       recentHistory,
       nest.partnerA?.likesAndDislikes ?? [],
-      nest.partnerB?.likesAndDislikes ?? []
+      nest.partnerB?.likesAndDislikes ?? [],
+      nest
     );
 
     let rawReflection;
@@ -173,12 +189,12 @@ async function extract(messageDoc, nest) {
     for (const r of rawReminders) {
       if (!r.message || !r.scheduledAt || !r.recipientRole) continue;
 
-      // Resolve 'A', 'B', 'both' → actual lineUserId(s)
+      // Resolve 'A', 'B', 'both' → actual lineBackendId(s)
       const targets = resolveRecipients(r.recipientRole, nest);
 
-      for (const { lineUserId, name, partnerName } of targets) {
+      for (const { lineBackendId, name, partnerName } of targets) {
         // Only schedule if recipient has followed the bot (dmActive)
-        const isA   = lineUserId === nest.partnerA?.lineUserId;
+        const isA   = lineBackendId === nest.partnerA?.lineBackendId;
         const dmOk  = isA ? nest.partnerA?.dmActive : nest.partnerB?.dmActive;
         if (!dmOk) {
           console.info(`[Extraction] Skipping reminder — ${name} hasn't followed the bot yet`);
@@ -199,13 +215,13 @@ async function extract(messageDoc, nest) {
         const duplicate = await Reminder.findOne({
           nestId:              nest._id,
           scheduledAt,
-          recipientLineUserId: lineUserId,
+          recipientLineUserId: lineBackendId,
         });
         if (duplicate) continue;
 
         await Reminder.create({
           nestId:              nest._id,
-          recipientLineUserId: lineUserId,
+          recipientLineUserId: lineBackendId,
           recipientName:       name,
           partnerName,
           message:             r.message,
@@ -278,24 +294,24 @@ async function extract(messageDoc, nest) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /**
  * Resolve recipientRole ('A' | 'B' | 'both') to an array of
- * { lineUserId, name, partnerName } objects.
+ * { lineBackendId, name, partnerName } objects.
  *
  * @param {string} role
  * @param {object} nest – Mongoose Nest document
- * @returns {{ lineUserId: string, name: string, partnerName: string }[]}
+ * @returns {{ lineBackendId: string, name: string, partnerName: string }[]}
  */
 function resolveRecipients(role, nest) {
-  const aId = nest.partnerA?.lineUserId;
-  const bId = nest.partnerB?.lineUserId;
+  const aId = nest.partnerA?.lineBackendId;
+  const bId = nest.partnerB?.lineBackendId;
   const aName = nest.partnerA?.name ?? 'Partner A';
   const bName = nest.partnerB?.name ?? 'Partner B';
 
-  if (role === 'A' && aId) return [{ lineUserId: aId, name: aName, partnerName: bName }];
-  if (role === 'B' && bId) return [{ lineUserId: bId, name: bName, partnerName: aName }];
+  if (role === 'A' && aId) return [{ lineBackendId: aId, name: aName, partnerName: bName }];
+  if (role === 'B' && bId) return [{ lineBackendId: bId, name: bName, partnerName: aName }];
   if (role === 'both') {
     const targets = [];
-    if (aId) targets.push({ lineUserId: aId, name: aName, partnerName: bName });
-    if (bId) targets.push({ lineUserId: bId, name: bName, partnerName: aName });
+    if (aId) targets.push({ lineBackendId: aId, name: aName, partnerName: bName });
+    if (bId) targets.push({ lineBackendId: bId, name: bName, partnerName: aName });
     return targets;
   }
   return [];
